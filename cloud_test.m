@@ -3,12 +3,15 @@ clear; clc; close all;
 lambda = 5;       % task arrival rate       [tasks/time]
 mu     = 0.4;     % completion rate coeff   [1/time]
 f      = 0.10;    % queue-management frac   [dimensionless]
-alpha  = 0.15;    % load-balancing gain     [1/time]
+alpha  = 0.05;    % load-balancing gain     [1/time]
 tau    = 2.0;     % network delay           [time]
 tspan  = [0, 60];
+tstop = 30;
 
 Q0    = [20; 5; 2];            % initial queue lengths (imbalanced)
 Qstar = lambda / (mu*(1-f));   % analytical steady state
+
+opts = ddeset('Jumps', tstop);
 
 % 3-node ring: 1-2-3-1
 A = [0 1 1; 1 0 1; 1 1 0];
@@ -20,12 +23,12 @@ tau_values = [0.5, 2.0, 5.0, 10.0];
 figure('Name','Tau Sweep');
 
 for k = 1:4
-    sol = dde23(@(t,Q,Qd) cloudDDE(t,Q,Qd,lambda,mu,f,alpha,A), ...
-                tau_values(k), @(t) Q0, tspan);
+    sol = dde23(@(t,Q,Qd) cloudDDE(t,Q,Qd,lambda,mu,f,alpha,A, tstop), ...
+                tau_values(k), @(t) Q0, tspan, opts);
     subplot(2,2,k);
     hold on;
     for i = 1:3
-        plot(sol.x, sol.y(i,:), colors{i}, 'LineWidth', 1.5);
+        plot(sol.x, floor(sol.y(i,:)), colors{i}, 'LineWidth', 1.5);
     end
     yline(Qstar, '--', 'Q^*', 'Color', [0.5 0.5 0.5], 'LineWidth', 1.2);
     title(sprintf('\\tau = %.1f', tau_values(k)));
@@ -38,14 +41,14 @@ sgtitle('Effect of Network Delay \tau (3-Node Ring)', 'FontWeight','bold');
 
 alpha_values = [0.02, 0.08, 0.20, 0.50];
 figure('Name','Alpha Sweep');
-
+diff_tau = [1, 2, 3];
 for k = 1:4
-    sol = dde23(@(t,Q,Qd) cloudDDE(t,Q,Qd,lambda,mu,f,alpha_values(k),A), ...
-                tau, @(t) Q0, tspan);
+    sol = dde23(@(t,Q,Qd) cloudDDE(t,Q,Qd,lambda,mu,f,alpha_values(k),A, tstop), ...
+                tau, @(t) Q0, tspan, opts);
     subplot(2,2,k);
     hold on;
     for i = 1:3
-        plot(sol.x, sol.y(i,:), colors{i}, 'LineWidth', 1.5);
+        plot(sol.x, floor(sol.y(i,:)), colors{i}, 'LineWidth', 1.5);
     end
     yline(Qstar, '--', 'Q^*', 'Color', [0.5 0.5 0.5], 'LineWidth', 1.2);
     title(sprintf('\\alpha = %.2f', alpha_values(k)));
@@ -54,4 +57,135 @@ for k = 1:4
     grid on;
 end
 sgtitle(sprintf('Effect of Load-Balancing Gain \\alpha (\\tau = %.1f)', tau), ...
+        'FontWeight','bold');
+
+diff_tau = [2, 2, 2;
+            1, 2, 3;
+            3, 1, 2;
+            2, 3, 1];
+figure('Name','Different Taus');
+for k = 1:4
+    sol = dde23(@(t,Q,Qd) cloudDDE(t,Q,Qd,lambda,mu,f, alpha,A, tstop), ...
+                diff_tau(k, :), @(t) Q0, tspan, opts);
+    subplot(2,2,k);
+    hold on;
+    for i = 1:3
+        plot(sol.x, floor(sol.y(i,:)), colors{i}, 'LineWidth', 1.5);
+    end
+    yline(Qstar, '--', 'Q^*', 'Color', [0.5 0.5 0.5], 'LineWidth', 1.2);
+    title(sprintf('\\tau_1 = %.1f, \\tau_2 = %.1f, \\tau_3 = %.1f', diff_tau(k, 1), diff_tau(k, 2), diff_tau(k, 3)));
+    xlabel('Time'); ylabel('Queue Length');
+    legend(labels{:}, 'Location','northeast');
+    grid on;
+end
+sgtitle(sprintf('Effect of Different Lags \\tau (\\alpha = %.2f)', alpha), ...
+        'FontWeight','bold');
+
+Q0    = [20; 20; 2];  
+diff_tau = [2, 2, 2;
+            1, 2, 3;
+            3, 1, 2;
+            2, 3, 1];
+figure('Name','Different Taus, Same Initial Queue');
+for k = 1:4
+    sol = dde23(@(t,Q,Qd) cloudDDE(t,Q,Qd,lambda,mu,f, alpha,A, tstop), ...
+                diff_tau(k, :), @(t) Q0, tspan, opts);
+    subplot(2,2,k);
+    hold on;
+    for i = 1:3
+        plot(sol.x, floor(sol.y(i,:)), colors{i}, 'LineWidth', 1.5);
+    end
+    yline(Qstar, '--', 'Q^*', 'Color', [0.5 0.5 0.5], 'LineWidth', 1.2);
+    title(sprintf('\\tau_1 = %.1f, \\tau_2 = %.1f, \\tau_3 = %.1f', diff_tau(k, 1), diff_tau(k, 2), diff_tau(k, 3)));
+    xlabel('Time'); ylabel('Queue Length');
+    legend(labels{:}, 'Location','northeast');
+    grid on;
+end
+sgtitle(sprintf('Effect of Different Lags \\tau (\\alpha = %.2f)', alpha), ...
+        'FontWeight','bold');
+% labels = {['Q_1','Q_2','Q_3'];
+%           ['Q_1','Q_2','Q_3', 'Q_4','Q_5'];
+%           ['Q_1','Q_2'];
+%           ['Q_1','Q_2','Q_3', 'Q_4','Q_5', 'Q_6'];
+%           ['Q_1','Q_2','Q_3', 'Q_4','Q_5']};
+% topologies = {'3-Ring';
+%               'Pentagram';
+%               '2 Computers';
+%               'Star';
+%               'Line'};
+% A = {[0 1 1; 
+%       1 0 1; 
+%       1 1 0];
+%      [0 1 0 0 1; 
+%       1 0 1 0 0;
+%       0 1 0 1 0;
+%       0 0 1 0 1;
+%       1 0 0 1 0];
+%      [0 1;
+%       1 0];
+%      [0 1 1 1 1 1;
+%       1 0 0 0 0 0;
+%       1 0 0 0 0 0;
+%       1 0 0 0 0 0;
+%       1 0 0 0 0 0;
+%       1 0 0 0 0 0;];
+%      [0 1 0 0 0;
+%       1 0 1 0 0;
+%       0 1 0 1 0;
+%       0 0 1 0 1;
+%       0 0 0 1 0]};
+% Q0    = {[20; 5; 2]
+%          [20; 5; 2; 6; 7];
+%          [20; 5];
+%          [20; 5; 2; 6; 7; 0];
+%          [20; 5; 2; 6; 7]};
+labels = {{'Q_1','Q_2','Q_3', 'Q_4','Q_5'};
+          {'Q_1','Q_2'};
+          {'Q_1','Q_2','Q_3', 'Q_4','Q_5', 'Q_6'};
+          {'Q_1','Q_2','Q_3', 'Q_4','Q_5'}};
+topologies = {'Pentagram';
+              '2 Computers';
+              'Star';
+              'Line'};
+A = {[0 1 0 0 1; 
+      1 0 1 0 0;
+      0 1 0 1 0;
+      0 0 1 0 1;
+      1 0 0 1 0];
+     [0 1;
+      1 0];
+     [0 1 1 1 1 1;
+      1 0 0 0 0 0;
+      1 0 0 0 0 0;
+      1 0 0 0 0 0;
+      1 0 0 0 0 0;
+      1 0 0 0 0 0;];
+     [0 1 0 0 0;
+      1 0 1 0 0;
+      0 1 0 1 0;
+      0 0 1 0 1;
+      0 0 0 1 0]};
+Q0    = {[20; 5; 2; 30; 7];
+         [20; 5];
+         [20; 5; 2; 30; 7; 12];
+         [20; 5; 2; 30; 7]};
+alpha_values = [0.05, 0.05, 0.05, 0.05];
+colors = {'b','r','k', 'm', 'c', 'g'};
+figure('Name','Different Topologies');
+diff_tau = [1, 2, 3];
+for k = 1:4
+    sol = dde23(@(t,Q,Qd) cloudDDE(t,Q,Qd,lambda,mu,f,alpha_values(k),A{k}, tstop), ...
+                tau, @(t) Q0{k}, tspan, opts);
+    subplot(2,2,k);
+    hold on;
+    for i = 1:length(Q0{k})
+        plot(sol.x, floor(sol.y(i,:)), colors{i}, 'LineWidth', 1.5);
+    end
+    yline(Qstar, '--', 'Q^*', 'Color', [0.5 0.5 0.5], 'LineWidth', 1.2);
+    title(sprintf(topologies{k}));
+    xlabel('Time'); ylabel('Queue Length');
+    legend(labels{k}{:}, 'Location','northeast');
+    grid on;
+end
+sgtitle(sprintf('Effect of Different Topologies'), ...
         'FontWeight','bold');
