@@ -67,8 +67,7 @@ diff_tau = [2, 2, 2;
             1, 2, 3;
             3, 1, 2;
             2, 3, 1];
-
-varying_taus = figure('Name','Different Taus');
+figure('Name','Different Taus');
 for k = 1:4
     sol = dde23(@(t,Q,Qd) cloudDDE(t,Q,Qd,lambda,mu,f, alpha,A, tstop), ...
                 diff_tau(k, :), @(t) Q0, tspan, opts);
@@ -85,16 +84,13 @@ for k = 1:4
 end
 sgtitle(sprintf('Effect of Different Lags \\tau (\\alpha = %.2f)', alpha), ...
         'FontWeight','bold');
-
-saveas(varying_taus, 'varying_taus_plot.jpg');
 
 Q0    = [20; 20; 2];  
 diff_tau = [2, 2, 2;
             1, 2, 3;
             3, 1, 2;
             2, 3, 1];
-
-diff_taus = figure('Name','Different Taus, Same Initial Queue');
+figure('Name','Different Taus, Same Initial Queue');
 for k = 1:4
     sol = dde23(@(t,Q,Qd) cloudDDE(t,Q,Qd,lambda,mu,f, alpha,A, tstop), ...
                 diff_tau(k, :), @(t) Q0, tspan, opts);
@@ -111,8 +107,6 @@ for k = 1:4
 end
 sgtitle(sprintf('Effect of Different Lags \\tau (\\alpha = %.2f)', alpha), ...
         'FontWeight','bold');
-
-saveas(diff_taus, 'diff_taus_plot.jpg');
 
 labels = {{'Q_1','Q_2','Q_3', 'Q_4','Q_5'};
           {'Q_1','Q_2'};
@@ -146,7 +140,7 @@ Q0    = {[20; 5; 2; 30; 7];
          [20; 5; 2; 30; 7]};
 alpha_values = [0.05, 0.05, 0.05, 0.05];
 colors = {'b','r','k', 'm', 'c', 'g'};
-diff_topologies = figure('Name','Different Topologies');
+figure('Name','Different Topologies');
 diff_tau = [1, 2, 3];
 for k = 1:4
     sol = dde23(@(t,Q,Qd) cloudDDE(t,Q,Qd,lambda,mu,f,alpha_values(k),A{k}, tstop), ...
@@ -162,8 +156,6 @@ for k = 1:4
     legend(labels{k}{:}, 'Location','northeast');
     grid on;
 end
-
-saveas(diff_topologies, 'diff_topologies_plot.jpg');
 % sgtitle(sprintf('Effect of Different Topologies'), ...
 %         'FontWeight','bold');
 % 
